@@ -1,0 +1,15 @@
+<html>
+<body>
+    <p>内存总数: {{.Memory.Total}} GB</p>
+    <p>已用内存: {{.Memory.Used}} MB</p>
+    <p>已用内存百分比: {{.Memory.UsedPercent}} % </p>
+
+    {{range $index,$val := .CPU.LoadPercent}}
+            <p>CPU {{ $index}}已用百分比: {{$val}} % </p>
+    {{end}}
+
+    {{range $index,$val := .Partitions}}
+         <p>磁盘 {{ $index}} 入口点: {{$val.Mountpoint }} 设备：{{$val.Device }} 总容量：{{$val.Total }}GB 使用：{{$val.Used }}GB 空间：{{$val.Free }}GB 空闲比：{{$val.UsedPercent }} % </p>
+    {{end}}
+</body>
+</html>
