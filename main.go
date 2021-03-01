@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/spf13/viper"
 	"html/template"
 	"log"
 	"net/http"
@@ -60,22 +63,40 @@ func  (sysInfo *SysInfo) round(value float64) float64 {
 
 
 func main() {
-
+	viper.AddConfigPath(".")
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	if err := viper.ReadInConfig(); err != nil {
+		if err, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found; ignore error if desired
+			viper.Set("server",":9090")
+			viper.WriteConfig()
+			viper.SafeWriteConfig()
+		} else {
+			// Config file was found but another error was produced
+			panic(fmt.Errorf("Fatal error config file: %s \n", err))
+		}
+	}
 
 	http.HandleFunc("/report", reportHandler)
-	log.Fatal(http.ListenAndServe(":9090", nil))
+	log.Fatal(http.ListenAndServe(viper.GetString("server"), nil))
 }
 
-func reportHandler(w http.ResponseWriter, r *http.Request) {
+func collectMemory(sysInfo *SysInfo){
 	v, _ := mem.VirtualMemory()
-	sysInfo:= SysInfo{}
+
 	sysInfo.Memory.Total = sysInfo.round(sysInfo.ToGB(v.Total))
 	sysInfo.Memory.Used =  sysInfo.round(sysInfo.ToMB(v.Used))
 	sysInfo.Memory.UsedPercent = v.UsedPercent
+}
 
+func collectCPU(sysInfo *SysInfo) {
 	sysInfo.CPU.LoadPercent, _ = cpu.Percent(0, true)
 	From(sysInfo.CPU.LoadPercent).SelectT(sysInfo.round).ToSlice(&sysInfo.CPU.LoadPercent)
 	sysInfo.CPU.CpuCount = len(sysInfo.CPU.LoadPercent)
+}
+
+func collectDisk(sysInfo *SysInfo) {
 	partitionStat,_ := disk.Partitions(true)
 	From(partitionStat).SelectT(func(p disk.PartitionStat) Partition {
 		ret := Partition{}
@@ -89,9 +110,31 @@ func reportHandler(w http.ResponseWriter, r *http.Request) {
 		ret.UsedPercent = sysInfo.round(diskUsed.UsedPercent)
 		return ret
 	}).ToSlice(&sysInfo.Partitions)
+}
+
+func collectHostName(sysInfo *SysInfo){
+	err,info :=host.Info()
+	fmt.Println(info)
+	fmt.Println(err)
+}
+
+func collectInfo() *SysInfo {
+	sysInfo:= &SysInfo{}
+	collectMemory(sysInfo)
+	collectCPU(sysInfo)
+	collectDisk(sysInfo)
+	collectHostName(sysInfo)
+	return sysInfo
+}
 
 
+
+func reportHandler(w http.ResponseWriter, r *http.Request) {
+
+	sysInfo := collectInfo()
 	t := template.Must(template.ParseFiles("SysInfoReport.html"))
 	t.Execute(w, sysInfo)
 }
+
+
 
