@@ -11,5 +11,14 @@
     {{range $index,$val := .Partitions}}
          <p>磁盘 {{ $index}} 入口点: {{$val.Mountpoint }} 设备：{{$val.Device }} 总容量：{{$val.Total }}GB 使用：{{$val.Used }}GB 空间：{{$val.Free }}GB 空闲比：{{$val.UsedPercent }} % </p>
     {{end}}
+
+    <p>主机名: {{.Host.Hostname}} </p>
+    <p>运行时间: {{.Host.Uptime}} 秒</p>
+    <p>启动时间: {{.Host.BootTime}} </p>
+    <p>进程数: {{.Host.Procs}} </p>
+    <p>操作系统: {{.Host.OS}} </p>
+    <p>平台: {{.Host.Platform}} </p>
+    <p>平台版本: {{.Host.PlatformVersion}} </p>
+
 </body>
 </html>
