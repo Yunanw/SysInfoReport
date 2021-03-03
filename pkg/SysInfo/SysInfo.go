@@ -5,6 +5,7 @@ type SysInfo struct {
 	CPU        CPUInfo
 	Partitions []Partition
 	Processes  []ProcessInfo
+	Services   []ServiceInfo
 	Host       HostInfo
 }
 

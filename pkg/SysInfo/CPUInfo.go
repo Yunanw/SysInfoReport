@@ -12,6 +12,6 @@ type CPUInfo struct {
 
 func collectCPU(sysInfo *SysInfo) {
 	sysInfo.CPU.LoadPercent, _ = cpu.Percent(0, true)
-	sysInfo.CPU.LoadPercent = funk.Map(sysInfo.CPU.LoadPercent, sysInfo.round).([]float64)
+	sysInfo.CPU.LoadPercent = funk.Map(sysInfo.CPU.LoadPercent, Round).([]float64)
 	sysInfo.CPU.CpuCount = len(sysInfo.CPU.LoadPercent)
 }

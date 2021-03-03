@@ -31,6 +31,8 @@ func setToViper(config *SysInfoReportConfig) {
 	viper.Set("ShowHost", config.ShowHost)
 	viper.Set("ShowMemory", config.ShowMemory)
 	viper.Set("ShowPartitions", config.ShowPartitions)
+	viper.Set("ServiceMonitor", config.ServiceMonitor)
+	viper.Set("ProcessMonitor", config.ProcessMonitor)
 }
 
 func getFromViper() *SysInfoReportConfig {
@@ -45,17 +47,40 @@ func getFromViper() *SysInfoReportConfig {
 	serviceMonitor := make([]ServiceMonitor, 1)
 	viper.UnmarshalKey("ServiceMonitor", &serviceMonitor)
 	config.ServiceMonitor = serviceMonitor
+
+	processMonitor := make([]ProcessMonitor, 1)
+	viper.UnmarshalKey("ProcessMonitor", &processMonitor)
+	config.ProcessMonitor = processMonitor
 	return config
 }
 
 func DefaultConfig() *SysInfoReportConfig {
+
+	serviceMonitor := make([]ServiceMonitor, 0)
+	serviceMonitor = append(serviceMonitor, ServiceMonitor{
+		Name: "edgeupdate",
+		ProcessMonitor: ProcessMonitor{
+			Exec:           "",
+			ShowCPUPercent: true,
+			ShowMemory:     true,
+		},
+	})
+
+	processMonitor := make([]ProcessMonitor, 0)
+	processMonitor = append(processMonitor, ProcessMonitor{
+		Exec:           "C:\\Windows\\explorer.exe",
+		ShowCPUPercent: true,
+		ShowMemory:     true,
+	})
+
 	ret := SysInfoReportConfig{
 		Server:         ":9090",
 		ShowCPU:        true,
 		ShowHost:       true,
 		ShowMemory:     true,
 		ShowPartitions: true,
-		ServiceMonitor: nil,
+		ServiceMonitor: serviceMonitor,
+		ProcessMonitor: processMonitor,
 	}
 
 	return &ret

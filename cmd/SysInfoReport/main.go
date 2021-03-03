@@ -3,6 +3,7 @@ package main
 import (
 	"SysInfoReport/pkg/SysInfo"
 	"SysInfoReport/pkg/config"
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/viper"
 	"golang.org/x/sys/windows"
@@ -20,15 +21,24 @@ func main() {
 	}
 
 	config.InitConfig(nil)
-	http.HandleFunc("/report", reportHandler)
+	http.HandleFunc("/reportHtml", reportHtmlHandler)
+	http.HandleFunc("/reportJson", reportJSONHandler)
 	log.Fatal(http.ListenAndServe(viper.GetString("server"), nil))
 }
 
-func reportHandler(w http.ResponseWriter, r *http.Request) {
+func reportHtmlHandler(w http.ResponseWriter, r *http.Request) {
 
 	sysInfo := SysInfo.CollectInfo()
 	t := template.Must(template.ParseFiles("SysInfoReport.html"))
 	t.Execute(w, sysInfo)
+}
+
+func reportJSONHandler(w http.ResponseWriter, r *http.Request) {
+
+	sysInfo := SysInfo.CollectInfo()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sysInfo)
 }
 
 func runMeElevated() {

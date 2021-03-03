@@ -2,21 +2,19 @@ package SysInfo
 
 import (
 	"SysInfoReport/pkg/config"
-	"fmt"
-	"github.com/shirou/gopsutil/v3/process"
 	"github.com/shirou/gopsutil/v3/winservices"
 	"github.com/thoas/go-funk"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
 )
 
-type Service struct {
-	Name          string
-	Config        mgr.Config
-	State         svc.State
-	Accepts       svc.Accepted
-	Pid           uint32
-	Win32ExitCode uint32
+type ServiceInfo struct {
+	Name        string
+	Config      mgr.Config
+	State       svc.State
+	Pid         uint32
+	ProcessInfo ProcessInfo
+	DESC        string
 	// contains filtered or unexported fields
 }
 
@@ -24,26 +22,39 @@ func collectService(sysInfo *SysInfo) {
 
 	sysInfoConfig := config.GetSysInfoReportConfig()
 
-	serviceList, err := winservices.ListServices()
-	serviceMonitorMap := funk.ToMap(sysInfoConfig.ServiceMonitor, "Name").(map[string]config.ServiceMonitor)
+	serviceList, _ := winservices.ListServices()
+	serviceListMap := funk.ToMap(serviceList, "Name").(map[string]winservices.Service)
+	sysInfo.Services = make([]ServiceInfo, 0)
 
-	serviceList = funk.Filter(serviceList, func(s winservices.Service) bool {
-		_, ok := serviceMonitorMap[s.Name]
-		return ok
-	}).([]winservices.Service)
+	for index, _ := range sysInfoConfig.ServiceMonitor {
+		sm, ok := serviceListMap[sysInfoConfig.ServiceMonitor[index].Name]
+		if ok {
+			s, err := winservices.NewService(sm.Name)
+			if err == nil {
+				s.GetServiceDetail()
+				serviceInfo := ServiceInfo{
+					Name:   s.Name,
+					Config: s.Config,
+					State:  s.Status.State,
+					Pid:    s.Status.Pid,
+				}
 
-	for index, _ := range serviceList {
-		s, _ := winservices.NewService(serviceList[index].Name)
-		s.GetServiceDetail()
-		serviceList[index] = *s
+				if s.Status.Pid != 0 {
+					processInfo, _ := collectProcessById(int32(s.Status.Pid))
+					serviceInfo.ProcessInfo = *processInfo
+				}
 
-		if s.Status.Pid != 0 {
-			proc, _ := process.NewProcess(int32(s.Status.Pid))
-			fmt.Println(proc)
+				sysInfo.Services = append(sysInfo.Services, serviceInfo)
+
+			}
+		} else {
+			serviceInfo := ServiceInfo{
+				Name: sysInfoConfig.ServiceMonitor[index].Name,
+				DESC: "未找到服务",
+			}
+			sysInfo.Services = append(sysInfo.Services, serviceInfo)
 		}
 
 	}
 
-	fmt.Println(serviceList)
-	fmt.Println(err)
 }
