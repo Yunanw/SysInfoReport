@@ -1,7 +1,9 @@
 package config
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"log"
 )
 
 type ServiceMonitor struct {
@@ -17,6 +19,7 @@ type ProcessMonitor struct {
 
 type SysInfoReportConfig struct {
 	Server         string
+	ShowNetwork    bool
 	ShowCPU        bool
 	ShowHost       bool
 	ShowMemory     bool
@@ -35,7 +38,7 @@ func setToViper(config *SysInfoReportConfig) {
 	viper.Set("ProcessMonitor", config.ProcessMonitor)
 }
 
-func getFromViper() *SysInfoReportConfig {
+func getFromViper() (*SysInfoReportConfig, error) {
 
 	config := &SysInfoReportConfig{
 		Server:         viper.GetString("Server"),
@@ -45,13 +48,18 @@ func getFromViper() *SysInfoReportConfig {
 		ShowPartitions: viper.GetBool("ShowPartitions"),
 	}
 	serviceMonitor := make([]ServiceMonitor, 1)
-	viper.UnmarshalKey("ServiceMonitor", &serviceMonitor)
+	if err := viper.UnmarshalKey("ServiceMonitor", &serviceMonitor); err != nil {
+		return nil, err
+	}
 	config.ServiceMonitor = serviceMonitor
 
 	processMonitor := make([]ProcessMonitor, 1)
-	viper.UnmarshalKey("ProcessMonitor", &processMonitor)
+
+	if err := viper.UnmarshalKey("ProcessMonitor", &processMonitor); err != nil {
+		return nil, err
+	}
 	config.ProcessMonitor = processMonitor
-	return config
+	return config, nil
 }
 
 func DefaultConfig() *SysInfoReportConfig {
@@ -97,20 +105,38 @@ func InitConfig(config *SysInfoReportConfig) error {
 	if err := viper.ReadInConfig(); err != nil {
 		if err, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// Config file not found; ignore error if desired
-			SaveToLocalConfig(config)
+			if saveError := SaveToLocalConfig(config); saveError != nil {
+				return errors.Wrap(err, "保存到配置文件失败")
+			}
+
 		} else {
-			return err
+			return errors.Wrap(err, "配置文件读取失败")
 		}
 	}
 	return nil
 }
 
-func SaveToLocalConfig(config *SysInfoReportConfig) {
+func SaveToLocalConfig(config *SysInfoReportConfig) error {
 	setToViper(config)
-	viper.SafeWriteConfig()
-	viper.WriteConfig()
+	if err := viper.SafeWriteConfig(); err != nil {
+		return err
+	}
+
+	if err := viper.WriteConfig(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func GetSysInfoReportConfig() *SysInfoReportConfig {
-	return getFromViper()
+
+	var (
+		err    error
+		config *SysInfoReportConfig
+	)
+
+	if config, err = getFromViper(); err != nil {
+		log.Fatal(err)
+	}
+	return config
 }

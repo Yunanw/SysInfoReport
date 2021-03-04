@@ -1,6 +1,7 @@
 package SysInfo
 
 import (
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v3/host"
 	"time"
 )
@@ -15,8 +16,11 @@ type HostInfo struct {
 	PlatformVersion string
 }
 
-func collectHostName(sysInfo *SysInfo) {
-	info, _ := host.Info()
+func collectHostName(sysInfo *SysInfo) error {
+	info, err := host.Info()
+	if err != nil {
+		return errors.Wrap(err, "读取Host信息失败")
+	}
 	sysInfo.Host.BootTime = time.Unix(int64(info.BootTime), 8)
 	sysInfo.Host.Hostname = info.Hostname
 	sysInfo.Host.OS = info.OS
@@ -24,4 +28,5 @@ func collectHostName(sysInfo *SysInfo) {
 	sysInfo.Host.PlatformVersion = info.PlatformVersion
 	sysInfo.Host.Procs = info.Procs
 	sysInfo.Host.Uptime = info.Uptime
+	return nil
 }

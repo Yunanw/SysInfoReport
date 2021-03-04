@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"syscall"
 )
@@ -18,27 +19,46 @@ import (
 func main() {
 	if !amAdmin() {
 		runMeElevated()
+		return
 	}
 
-	config.InitConfig(nil)
+	if err := config.InitConfig(nil); err != nil {
+		log.Fatal(err)
+	}
+
 	http.HandleFunc("/reportHtml", reportHtmlHandler)
 	http.HandleFunc("/reportJson", reportJSONHandler)
 	log.Fatal(http.ListenAndServe(viper.GetString("server"), nil))
 }
 
-func reportHtmlHandler(w http.ResponseWriter, r *http.Request) {
+func reportHtmlHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 
-	sysInfo := SysInfo.CollectInfo()
+	sysInfo, err := SysInfo.CollectInfo()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	t := template.Must(template.ParseFiles("SysInfoReport.html"))
-	t.Execute(w, sysInfo)
+	err = t.Execute(w, sysInfo)
+	fmt.Println(err)
 }
 
 func reportJSONHandler(w http.ResponseWriter, r *http.Request) {
 
-	sysInfo := SysInfo.CollectInfo()
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sysInfo)
+	sysInfo, err := SysInfo.CollectInfo()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+	}
+
+	if err = json.NewEncoder(w).Encode(sysInfo); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
 }
 
 func runMeElevated() {
@@ -61,9 +81,12 @@ func runMeElevated() {
 }
 
 func amAdmin() bool {
+	if runtime.GOOS != "windows" {
+		return true
+	}
 	_, err := os.Open("\\\\.\\PHYSICALDRIVE0")
 	if err != nil {
-		fmt.Println("admin no")
+		fmt.Println("Windows下需要管理员权限运行本程序")
 		return false
 	}
 	fmt.Println("admin yes")

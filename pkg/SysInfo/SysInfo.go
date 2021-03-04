@@ -7,6 +7,7 @@ type SysInfo struct {
 	Processes  []ProcessInfo
 	Services   []ServiceInfo
 	Host       HostInfo
+	Network    NetworkInfo
 }
 
 func ToGB(kbs uint64) float64 {
@@ -23,13 +24,36 @@ func Round(value float64) float64 {
 	return float64(int(value*100)) / 100
 }
 
-func CollectInfo() *SysInfo {
+func CollectInfo() (*SysInfo, error) {
 	sysInfo := &SysInfo{}
-	collectMemory(sysInfo)
-	collectCPU(sysInfo)
-	collectPartition(sysInfo)
-	collectHostName(sysInfo)
-	collectService(sysInfo)
-	collectProcess(sysInfo)
-	return sysInfo
+
+	if err := collectMemory(sysInfo); err != nil {
+		return nil, err
+	}
+
+	if err := collectCPU(sysInfo); err != nil {
+		return nil, err
+	}
+
+	if err := collectPartition(sysInfo); err != nil {
+		return nil, err
+	}
+
+	if err := collectHostName(sysInfo); err != nil {
+		return nil, err
+	}
+
+	if err := collectService(sysInfo); err != nil {
+		return nil, err
+	}
+
+	if err := collectProcess(sysInfo); err != nil {
+		return nil, err
+	}
+
+	if err := collectNetwork(sysInfo); err != nil {
+		return nil, err
+	}
+
+	return sysInfo, nil
 }

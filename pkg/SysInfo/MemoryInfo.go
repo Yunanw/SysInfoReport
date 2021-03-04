@@ -1,6 +1,9 @@
 package SysInfo
 
-import "github.com/shirou/gopsutil/v3/mem"
+import (
+	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/v3/mem"
+)
 
 type MemoryInfo struct {
 	Total       float64
@@ -8,10 +11,13 @@ type MemoryInfo struct {
 	UsedPercent float64
 }
 
-func collectMemory(sysInfo *SysInfo) {
-	v, _ := mem.VirtualMemory()
-
+func collectMemory(sysInfo *SysInfo) error {
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		return errors.Wrap(err, "读取系统内存信息失败")
+	}
 	sysInfo.Memory.Total = Round(ToGB(v.Total))
 	sysInfo.Memory.Used = Round(ToMB(v.Used))
 	sysInfo.Memory.UsedPercent = v.UsedPercent
+	return nil
 }

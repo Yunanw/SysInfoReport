@@ -1,8 +1,8 @@
 package SysInfo
 
 import (
+	. "github.com/ahmetb/go-linq/v3"
 	"github.com/shirou/gopsutil/v3/disk"
-	"github.com/thoas/go-funk"
 )
 
 type Partition struct {
@@ -15,9 +15,12 @@ type Partition struct {
 	UsedPercent float64
 }
 
-func collectPartition(sysInfo *SysInfo) {
-	partitionStat, _ := disk.Partitions(true)
-	sysInfo.Partitions = funk.Map(partitionStat, func(p disk.PartitionStat) Partition {
+func collectPartition(sysInfo *SysInfo) error {
+	partitionStat, err := disk.Partitions(true)
+	if err != nil {
+		return err
+	}
+	From(partitionStat).SelectT(func(p disk.PartitionStat) Partition {
 		ret := Partition{}
 		ret.Device = p.Device
 		ret.Fstype = p.Fstype
@@ -28,5 +31,6 @@ func collectPartition(sysInfo *SysInfo) {
 		ret.Used = Round(ToGB(diskUsed.Used))
 		ret.UsedPercent = Round(diskUsed.UsedPercent)
 		return ret
-	}).([]Partition)
+	}).ToSlice(&sysInfo.Partitions)
+	return nil
 }

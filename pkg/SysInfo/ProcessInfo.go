@@ -2,7 +2,10 @@ package SysInfo
 
 import (
 	"SysInfoReport/pkg/config"
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v3/process"
+	"log"
+	"strconv"
 )
 
 type ProcessInfo struct {
@@ -33,15 +36,23 @@ func collectProcessById(pid int32) (*ProcessInfo, error) {
 
 }
 
-func collectProcess(sysInfo *SysInfo) {
+func collectProcess(sysInfo *SysInfo) error {
 	reportConfig := config.GetSysInfoReportConfig()
-	processInfo, _ := process.Processes()
+	processInfo, err := process.Processes()
+	if err != nil {
+		return errors.Wrap(err, "读取进程列表失败")
+	}
 	processInfoMap := makeProcessListToExeMap(processInfo)
-	for index, _ := range reportConfig.ProcessMonitor {
+	for index := range reportConfig.ProcessMonitor {
+
 		psInfo, ok := processInfoMap[reportConfig.ProcessMonitor[index].Exec]
 		if ok {
-			p, _ := collectProcessById(psInfo.PID)
-			psInfo = *p
+			p, err := collectProcessById(psInfo.PID)
+			if err == nil {
+				psInfo = *p
+			} else {
+				log.Printf("%+v\n", errors.Errorf("取得进程信息失败:%s", strconv.Itoa(int(psInfo.PID))))
+			}
 
 		} else {
 			psInfo.DESC = "未找到进程"
@@ -49,6 +60,8 @@ func collectProcess(sysInfo *SysInfo) {
 		}
 		sysInfo.Processes = append(sysInfo.Processes, psInfo)
 	}
+
+	return err
 
 }
 

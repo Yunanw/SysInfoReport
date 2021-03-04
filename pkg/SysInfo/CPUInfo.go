@@ -1,8 +1,9 @@
 package SysInfo
 
 import (
+	. "github.com/ahmetb/go-linq/v3"
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/thoas/go-funk"
 )
 
 type CPUInfo struct {
@@ -10,8 +11,15 @@ type CPUInfo struct {
 	LoadPercent []float64
 }
 
-func collectCPU(sysInfo *SysInfo) {
-	sysInfo.CPU.LoadPercent, _ = cpu.Percent(0, true)
-	sysInfo.CPU.LoadPercent = funk.Map(sysInfo.CPU.LoadPercent, Round).([]float64)
+func collectCPU(sysInfo *SysInfo) error {
+	p, err := cpu.Percent(0, true)
+	if err != nil {
+		return errors.Wrap(err, "读取CPU使用信息失败")
+	}
+
+	From(p).SelectT(func(f float64) float64 {
+		return Round(f)
+	}).ToSlice(&sysInfo.CPU.LoadPercent)
 	sysInfo.CPU.CpuCount = len(sysInfo.CPU.LoadPercent)
+	return nil
 }
