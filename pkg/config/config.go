@@ -6,17 +6,6 @@ import (
 	"log"
 )
 
-type ServiceMonitor struct {
-	Name           string
-	ProcessMonitor ProcessMonitor
-}
-
-type ProcessMonitor struct {
-	Exec           string
-	ShowCPUPercent bool
-	ShowMemory     bool
-}
-
 type SysInfoReportConfig struct {
 	Server         string
 	ShowNetwork    bool
@@ -24,8 +13,8 @@ type SysInfoReportConfig struct {
 	ShowHost       bool
 	ShowMemory     bool
 	ShowPartitions bool
-	ServiceMonitor []ServiceMonitor
-	ProcessMonitor []ProcessMonitor
+	//ServiceCollector []collector.ServiceCollector
+	//ProcessCollector []collector.ProcessCollector
 }
 
 func setToViper(config *SysInfoReportConfig) {
@@ -34,8 +23,8 @@ func setToViper(config *SysInfoReportConfig) {
 	viper.Set("ShowHost", config.ShowHost)
 	viper.Set("ShowMemory", config.ShowMemory)
 	viper.Set("ShowPartitions", config.ShowPartitions)
-	viper.Set("ServiceMonitor", config.ServiceMonitor)
-	viper.Set("ProcessMonitor", config.ProcessMonitor)
+	//viper.Set("ServiceCollector", config.ServiceCollector)
+	//viper.Set("ProcessCollector", config.ProcessCollector)
 }
 
 func getFromViper() (*SysInfoReportConfig, error) {
@@ -47,39 +36,39 @@ func getFromViper() (*SysInfoReportConfig, error) {
 		ShowMemory:     viper.GetBool("ShowMemory"),
 		ShowPartitions: viper.GetBool("ShowPartitions"),
 	}
-	serviceMonitor := make([]ServiceMonitor, 1)
-	if err := viper.UnmarshalKey("ServiceMonitor", &serviceMonitor); err != nil {
-		return nil, err
-	}
-	config.ServiceMonitor = serviceMonitor
-
-	processMonitor := make([]ProcessMonitor, 1)
-
-	if err := viper.UnmarshalKey("ProcessMonitor", &processMonitor); err != nil {
-		return nil, err
-	}
-	config.ProcessMonitor = processMonitor
+	//serviceMonitor := make([]collector.ServiceCollector, 1)
+	//if err := viper.UnmarshalKey("ServiceCollector", &serviceMonitor); err != nil {
+	//	return nil, err
+	//}
+	//config.ServiceCollector = serviceMonitor
+	//
+	//processMonitor := make([]collector.ProcessCollector, 1)
+	//
+	//if err := viper.UnmarshalKey("ProcessCollector", &processMonitor); err != nil {
+	//	return nil, err
+	//}
+	//config.ProcessCollector = processMonitor
 	return config, nil
 }
 
 func DefaultConfig() *SysInfoReportConfig {
 
-	serviceMonitor := make([]ServiceMonitor, 0)
-	serviceMonitor = append(serviceMonitor, ServiceMonitor{
-		Name: "edgeupdate",
-		ProcessMonitor: ProcessMonitor{
-			Exec:           "",
-			ShowCPUPercent: true,
-			ShowMemory:     true,
-		},
-	})
-
-	processMonitor := make([]ProcessMonitor, 0)
-	processMonitor = append(processMonitor, ProcessMonitor{
-		Exec:           "C:\\Windows\\explorer.exe",
-		ShowCPUPercent: true,
-		ShowMemory:     true,
-	})
+	//serviceMonitor := make([]collector.ServiceCollector, 0)
+	//serviceMonitor = append(serviceMonitor,collector.ServiceCollector{
+	//	Name: "edgeupdate",
+	//	ProcessMonitor: &collector.ProcessCollector{
+	//		Exec:           "",
+	//		ShowCPUPercent: true,
+	//		ShowMemory:     true,
+	//	},
+	//})
+	//
+	//processMonitor := make([]collector.ProcessCollector, 0)
+	//processMonitor = append(processMonitor, collector.ProcessCollector{
+	//	Exec:           "C:\\Windows\\explorer.exe",
+	//	ShowCPUPercent: true,
+	//	ShowMemory:     true,
+	//})
 
 	ret := SysInfoReportConfig{
 		Server:         ":9090",
@@ -87,8 +76,8 @@ func DefaultConfig() *SysInfoReportConfig {
 		ShowHost:       true,
 		ShowMemory:     true,
 		ShowPartitions: true,
-		ServiceMonitor: serviceMonitor,
-		ProcessMonitor: processMonitor,
+		//ServiceCollector: serviceMonitor,
+		//ProcessCollector: processMonitor,
 	}
 
 	return &ret
@@ -99,6 +88,7 @@ func InitConfig(config *SysInfoReportConfig) error {
 	if config == nil {
 		config = DefaultConfig()
 	}
+
 	viper.AddConfigPath(".")
 	viper.SetConfigName("SysInfoReport")
 	viper.SetConfigType("yaml")

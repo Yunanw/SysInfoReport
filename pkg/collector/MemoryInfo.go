@@ -1,4 +1,4 @@
-package SysInfo
+package collector
 
 import (
 	"github.com/pkg/errors"
@@ -11,7 +11,10 @@ type MemoryInfo struct {
 	UsedPercent float64
 }
 
-func collectMemory(sysInfo *SysInfo) error {
+type MemoryCollector struct {
+}
+
+func (collector *MemoryCollector) Collect(sysInfo *SysInfo) error {
 	v, err := mem.VirtualMemory()
 	if err != nil {
 		return errors.Wrap(err, "读取系统内存信息失败")
@@ -19,5 +22,6 @@ func collectMemory(sysInfo *SysInfo) error {
 	sysInfo.Memory.Total = Round(ToGB(v.Total))
 	sysInfo.Memory.Used = Round(ToMB(v.Used))
 	sysInfo.Memory.UsedPercent = v.UsedPercent
+
 	return nil
 }

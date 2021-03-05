@@ -1,7 +1,7 @@
 package main
 
 import (
-	"SysInfoReport/pkg/SysInfo"
+	"SysInfoReport/pkg/collector"
 	"SysInfoReport/pkg/config"
 	"encoding/json"
 	"fmt"
@@ -36,7 +36,7 @@ func reportHtmlHandler(
 	r *http.Request,
 ) {
 
-	sysInfo, err := SysInfo.CollectInfo()
+	sysInfo, err := collector.CollectInfo()
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -49,7 +49,7 @@ func reportHtmlHandler(
 func reportJSONHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
-	sysInfo, err := SysInfo.CollectInfo()
+	sysInfo, err := collector.CollectInfo()
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}

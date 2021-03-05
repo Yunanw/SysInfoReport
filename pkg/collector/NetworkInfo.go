@@ -1,4 +1,4 @@
-package SysInfo
+package collector
 
 import (
 	"github.com/pkg/errors"
@@ -28,7 +28,12 @@ type ConnectionInfo struct {
 	Exec   string
 }
 
-func collectNetwork(sysInfo *SysInfo) error {
+type NetworkCollector struct {
+	CollectionInfo bool
+	IP             bool
+}
+
+func (collector *NetworkCollector) Collect(sysInfo *SysInfo) error {
 	network := &NetworkInfo{}
 	if err := collectLocalIP(network); err != nil {
 		return errors.Wrap(err, "读取本机IP失败")

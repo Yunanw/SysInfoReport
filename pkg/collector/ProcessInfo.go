@@ -1,7 +1,6 @@
-package SysInfo
+package collector
 
 import (
-	"SysInfoReport/pkg/config"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v3/process"
 	"log"
@@ -16,6 +15,16 @@ type ProcessInfo struct {
 	DESC       string
 }
 
+type ProcessTarget struct {
+	Exec           string
+	ShowCPUPercent bool
+	ShowMemory     bool
+}
+
+type ProcessCollector struct {
+	Target []ProcessTarget
+}
+
 func collectProcessById(pid int32) (*ProcessInfo, error) {
 	p, _ := process.NewProcess(pid)
 	exe, err := p.Exe()
@@ -23,8 +32,11 @@ func collectProcessById(pid int32) (*ProcessInfo, error) {
 		return nil, err
 	}
 
-	cpuPercent, _ := p.CPUPercent()
-	memStat, _ := p.MemoryInfo()
+	cpuPercent, err := p.CPUPercent()
+	memStat, err := p.MemoryInfo()
+	if err != nil {
+		return nil, err
+	}
 	processInfo := &ProcessInfo{
 		PID:        p.Pid,
 		Exec:       exe,
@@ -36,16 +48,18 @@ func collectProcessById(pid int32) (*ProcessInfo, error) {
 
 }
 
-func collectProcess(sysInfo *SysInfo) error {
-	reportConfig := config.GetSysInfoReportConfig()
+func (collector *ProcessCollector) Collect(sysInfo *SysInfo) error {
+	if len(collector.Target) == 0 {
+		return nil
+	}
 	processInfo, err := process.Processes()
 	if err != nil {
 		return errors.Wrap(err, "读取进程列表失败")
 	}
 	processInfoMap := makeProcessListToExeMap(processInfo)
-	for index := range reportConfig.ProcessMonitor {
+	for index := range collector.Target {
 
-		psInfo, ok := processInfoMap[reportConfig.ProcessMonitor[index].Exec]
+		psInfo, ok := processInfoMap[collector.Target[index].Exec]
 		if ok {
 			p, err := collectProcessById(psInfo.PID)
 			if err == nil {
@@ -56,7 +70,7 @@ func collectProcess(sysInfo *SysInfo) error {
 
 		} else {
 			psInfo.DESC = "未找到进程"
-			psInfo.Exec = reportConfig.ProcessMonitor[index].Exec
+			psInfo.Exec = collector.Target[index].Exec
 		}
 		sysInfo.Processes = append(sysInfo.Processes, psInfo)
 	}

@@ -1,4 +1,4 @@
-package SysInfo
+package collector
 
 import (
 	"github.com/pkg/errors"
@@ -16,7 +16,10 @@ type HostInfo struct {
 	PlatformVersion string
 }
 
-func collectHostName(sysInfo *SysInfo) error {
+type HostCollector struct {
+}
+
+func (collector *HostCollector) Collect(sysInfo *SysInfo) error {
 	info, err := host.Info()
 	if err != nil {
 		return errors.Wrap(err, "读取Host信息失败")

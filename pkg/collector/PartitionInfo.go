@@ -1,4 +1,4 @@
-package SysInfo
+package collector
 
 import (
 	. "github.com/ahmetb/go-linq/v3"
@@ -15,7 +15,10 @@ type Partition struct {
 	UsedPercent float64
 }
 
-func collectPartition(sysInfo *SysInfo) error {
+type PartitionCollector struct {
+}
+
+func (collector *PartitionCollector) Collect(sysInfo *SysInfo) error {
 	partitionStat, err := disk.Partitions(true)
 	if err != nil {
 		return err
